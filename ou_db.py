@@ -30,7 +30,7 @@ class Site(Base):
 class LeadStore(Base):
 	__tablename__ = 'lead_store'
 
-	site_name = Column(Text)									# СайтНаименование
+	site_name = Column(Text, nullable=False, primary_key=True)	# СайтНаименование
 	id = Column(BigInteger, nullable=False, primary_key=True)	# ИД
 	order_type = Column(Integer)								# ТипЗаказа
 	time_create = Column(BigInteger)  							# ВремяСоздания (UTC)
