@@ -9,7 +9,7 @@ import requests
 from lxml import etree
 
 import ou_db
-from ou_common import get_child
+from ou_common import get_child, to_int
 
 program_name = "OrderUpdater"
 crawl_delay = 0.15
@@ -87,10 +87,15 @@ def main():
 
 			last_id = ou_db.get_last_order_id(site)
 
-			orders = get_new_orders(site, last_id)
+			orders_orig = get_new_orders(site, last_id + 1)
+			orders = sorted(orders_orig, key=lambda e: to_int(get_child(e, "id")))
+
 			for i, order in enumerate(orders):
 				if i % 100 == 0:
 					logger.info("Storing {}'s new order".format(i))
+
+				if get_child(orders_orig[-(i + 1)], "id") != get_child(orders[i], "id"):
+					logger.critical('OMG!!')
 
 				ou_db.store_order(site, order)
 
