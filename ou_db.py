@@ -125,7 +125,7 @@ def store_order(site, order):
 		order_type = 0
 
 	try:
-		creation_time = get_child(order, "time_create")
+		creation_time = get_child(order, "timestamp")
 		if creation_time:
 			creation_time = int(creation_time)
 	except ValueError as e:
@@ -148,7 +148,6 @@ def store_order(site, order):
 						utm5=get_child(order, "utm5"),
 						ip=get_child(order, "ip"))
 	session.add(db_order)
-	session.commit()
 
 
 def store_order_item(site, order, item):
@@ -190,5 +189,4 @@ def store_order_item(site, order, item):
 									price=item_price)
 
 	session.add(db_order_item)
-	session.commit()
 

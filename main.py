@@ -93,9 +93,7 @@ def main():
 			for i, order in enumerate(orders):
 				if i % 100 == 0:
 					logger.info("Storing {}'s new order".format(i))
-
-				if get_child(orders_orig[-(i + 1)], "id") != get_child(orders[i], "id"):
-					logger.critical('OMG!!')
+					ou_db.session.commit()
 
 				ou_db.store_order(site, order)
 
@@ -104,6 +102,7 @@ def main():
 					for item in order_items:
 						ou_db.store_order_item(site, order, item)
 
+			ou_db.session.commit()
 			logger.info("Finished site {}".format(site.name))
 
 	except Exception as e:
