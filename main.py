@@ -13,7 +13,7 @@ from ou_common import get_child, to_int
 
 program_name = "OrderUpdater"
 crawl_delay = 0.15
-start_time = 1527125400
+start_time = 1527125400			# 24 May 01:30
 
 
 def init_logger():
