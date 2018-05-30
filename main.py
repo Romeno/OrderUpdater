@@ -13,6 +13,7 @@ from ou_common import get_child, to_int
 
 program_name = "OrderUpdater"
 crawl_delay = 0.15
+start_time = 1527125400
 
 
 def init_logger():
@@ -53,7 +54,8 @@ def get_new_orders(site, from_id):
 	logger.info("Getting orders from id {}".format(from_id))
 
 	try:
-		resp = requests.get("http://{}/orderxml_crm.php?start_id={}".format(site.name, from_id))
+		url = "http://{}/orderxml_crm.php?start_id={}&start_time={}".format(site.name, from_id, start_time)
+		resp = requests.get(url)
 		if resp.ok:
 			root = etree.fromstring(resp.content)
 			if len(root) == 0:
