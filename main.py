@@ -87,25 +87,33 @@ def main():
 		for site in ou_db.get_sites():
 			logger.info("Started site {}".format(site.name))
 
-			last_id = ou_db.get_last_order_id(site)
+			try:
+				last_id = ou_db.get_last_order_id(site)
 
-			orders_orig = get_new_orders(site, last_id + 1)
-			orders = sorted(orders_orig, key=lambda e: to_int(get_child(e, "id")))
+				orders_orig = get_new_orders(site, last_id + 1)
+				if orders_orig is None:
+					logger.error("Skipping site {} due to error when getting order list".format(site.name))
+					continue
 
-			for i, order in enumerate(orders):
-				if i % 100 == 0:
-					logger.info("Storing {}'s new order".format(i))
-					ou_db.session.commit()
+				orders = sorted(orders_orig, key=lambda e: to_int(get_child(e, "id")))
 
-				ou_db.store_order(site, order)
+				for i, order in enumerate(orders):
+					if i % 100 == 0:
+						logger.info("Storing {}'s new order".format(i))
+						ou_db.session.commit()
 
-				order_items = order.find("order_items")
-				if order_items:
-					for item in order_items:
-						ou_db.store_order_item(site, order, item)
+					ou_db.store_order(site, order)
 
-			ou_db.session.commit()
-			logger.info("Finished site {}".format(site.name))
+					order_items = order.find("order_items")
+					if order_items:
+						for item in order_items:
+							ou_db.store_order_item(site, order, item)
+
+				ou_db.session.commit()
+				logger.info("Finished site {}".format(site.name))
+			except Exception as e:
+				logger.exception("Exception during {} run".format(program_name))
+				logger.error("Skipping site {}".format(site.name))
 
 	except Exception as e:
 		logger.exception("Exception during {} run".format(program_name))
