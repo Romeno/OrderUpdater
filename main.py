@@ -55,7 +55,7 @@ def get_new_orders(site, from_id):
 
 	try:
 		url = "http://{}/orderxml_crm.php?start_id={}&start_time={}".format(site.name, from_id, start_time)
-		resp = requests.get(url)
+		resp = requests.get(url, verify=False)
 		if resp.ok:
 			root = etree.fromstring(resp.content)
 			if len(root) == 0:
