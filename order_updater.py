@@ -74,12 +74,9 @@ def get_new_orders(site, from_id):
 
 
 def main():
-	init_logger()
+	from ou_config import db_username, db_password, db_host, db_name
 
-	db_username = "postgres"
-	db_password = ""
-	db_host = "localhost"
-	db_name = "Crm"
+	init_logger()
 
 	logger = logging.getLogger()
 
