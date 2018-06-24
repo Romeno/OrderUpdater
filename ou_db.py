@@ -5,6 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
+import logging
 
 from ou_common import get_child, to_bool
 
@@ -155,29 +156,43 @@ def store_order_item(site, order, item):
 	# 	.filter_by(code=, param_name=) \
 	# 	.first()
 
-	try:
-		order_id = get_child(order, "id")
-		if order_id:
+	logger = logging.getLogger()
+
+	order_id = get_child(order, "id")
+	if order_id:
+		try:
 			order_id = int(order_id)
-	except ValueError as e:
+		except ValueError as e:
+			logger.error("'id'='{}' is not int".format(order_id))
+			order_id = 0
+	else:
+		logger.error("No 'id' in order data")
 		order_id = 0
 
 	item_name = item.get("name")
 	item_code = item.get("code")
 	item_param = item.get("param")
 
-	try:
-		item_qty = item.get("qty")
-		if item_qty:
+	item_qty = item.get("qty")
+	if item_qty:
+		try:
 			item_qty = int(item_qty)
-	except ValueError as e:
+		except ValueError as e:
+			logger.error("'qty'='{}' is not int for order_id {}".format(item_qty, order_id))
+			item_qty = 0
+	else:
+		logger.error("No 'qty' in order data for order_id {}".format(order_id))
 		item_qty = 0
 
-	try:
-		item_price = item.get("price")
-		if item_price:
+	item_price = item.get("price")
+	if item_price:
+		try:
 			item_price = int(item_price)
-	except ValueError as e:
+		except ValueError as e:
+			logger.error("'price'='{}' is not int for order_id {}".format(item_price, order_id))
+			item_price = 0
+	else:
+		logger.error("No 'price' in order data for order_id {}".format(order_id))
 		item_price = 0
 
 	db_order_item = LeadOrderItems(site_name=site.name,

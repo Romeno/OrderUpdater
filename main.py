@@ -8,6 +8,8 @@ import time
 import requests
 from lxml import etree
 
+from sqlalchemy.exc import SQLAlchemyError
+
 import ou_db
 from ou_common import get_child, to_int
 
@@ -59,7 +61,7 @@ def get_new_orders(site, from_id):
 		if resp.ok:
 			root = etree.fromstring(resp.content)
 			if len(root) == 0:
-				logger.warning("Empty xml of orders for some reason for site {}".format(site.name))
+				logger.info("Empty xml for site {}".format(site.name))
 				return None
 
 			return root[0]
@@ -100,7 +102,11 @@ def main():
 				for i, order in enumerate(orders):
 					if i % 100 == 0:
 						logger.info("Storing {}'s new order".format(i))
-						ou_db.session.commit()
+						try:
+							ou_db.session.commit()
+						except SQLAlchemyError as e:
+							logger.error("Potential error rolling back transaction")
+							ou_db.session.rollback()
 
 					ou_db.store_order(site, order)
 
