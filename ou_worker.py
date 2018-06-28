@@ -42,9 +42,10 @@ class OrderUpdater:
 					return
 
 				orders = sorted(orders_orig, key=lambda e: to_int(get_child(e, "id")))
+				logger.info("{} new orders".format(len(orders)))
 
 				for i, order in enumerate(orders):
-					if i % 100 == 0:
+					if i % 100 == 0 and i != 0:
 						logger.info("Storing {}'s new order".format(i))
 						try:
 							ou_db.session.commit()
