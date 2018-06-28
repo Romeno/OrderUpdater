@@ -26,7 +26,7 @@ class OrderUpdater:
 
 		init_logger(self.worker_logger_name)
 
-		logger = logging.getLogger()
+		logger = logging.getLogger(self.worker_logger_name)
 
 		logger.info("Started site {}".format(self.site_name))
 
@@ -74,7 +74,7 @@ class OrderUpdater:
 		logger.info("Finished!!!")
 
 	def get_new_orders(self, site_name, from_id):
-		logger = logging.getLogger()
+		logger = logging.getLogger(self.worker_logger_name)
 
 		logger.info("Getting orders from id {}".format(from_id))
 
