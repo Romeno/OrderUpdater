@@ -2,129 +2,69 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import os
-import os.path
-import time
+from utils.process import SilentProcessPool
 
-import requests
-from lxml import etree
-
-from sqlalchemy.exc import SQLAlchemyError
+from ou_config import program_name
 
 import ou_db
-from ou_common import get_child, to_int
-
-program_name = "OrderUpdater"
-crawl_delay = 0.15
-start_time = 1527125400			# 24 May 01:30
+import ou_worker
+import ou_common
 
 
-def init_logger():
-	from logging.config import dictConfig
+def start_order_updater_instance(q):
+    site = q
+    try:
+        ou = ou_worker.OrderUpdater(site)
+        ou.run()
+    except KeyboardInterrupt:
+        raise
+    except:
+        pass
 
-	logging_config = {
-		'version': 1,
-		'disable_existing_loggers': False,
-		'formatters': {
-			'f': {
-				'format':
-					'%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
-			}
-		},
-		'handlers': {
-			'h': {
-				'class': 'logging.handlers.RotatingFileHandler',
-				'formatter': 'f',
-				'level': 'DEBUG',
-				'filename': 'errors.log',
-				'maxBytes': 10485760,
-				'backupCount': 20,
-				'encoding': 'utf8'
-			}
-		},
-		'root': {
-			'handlers': ['h'],
-			'level': logging.INFO,
-		},
-	}
-
-	dictConfig(logging_config)
-
-
-def get_new_orders(site, from_id):
-	logger = logging.getLogger()
-
-	logger.info("Getting orders from id {}".format(from_id))
-
-	try:
-		url = "http://{}/orderxml_crm.php?start_id={}&start_time={}".format(site.name, from_id, start_time)
-		resp = requests.get(url, verify=False)
-		if resp.ok:
-			root = etree.fromstring(resp.content)
-			if len(root) == 0:
-				logger.info("Empty xml for site {}".format(site.name))
-				return None
-
-			return root[0]
-		else:
-			logger.error("Error {} when getting {} orders".format(resp.status_code, site.name))
-			return None
-	except requests.RequestException as e:
-		logger.exception("Requests exception when getting {} orders".format(site.name))
-		return None
+# end of StartCrawler
 
 
 def main():
-	from ou_config import db_username, db_password, db_host, db_name
+    from ou_config import db_username, db_password, db_host, db_name, process_pool_size, runner_log_name
 
-	init_logger()
+    ou_common.init_logger(runner_log_name)
 
-	logger = logging.getLogger()
+    logger = logging.getLogger(runner_log_name)
 
-	try:
-		ou_db.connect(db_username, db_password, db_host, db_name)
+    try:
+        ou_db.connect(db_username, db_password, db_host, db_name)
 
-		for site in ou_db.get_sites():
-			logger.info("Started site {}".format(site.name))
+        sites = ou_db.get_sites()
+        sites = [site.name for site in sites]
 
-			try:
-				last_id = ou_db.get_last_order_id(site)
+        ou_db.disconnect()
 
-				orders_orig = get_new_orders(site, last_id + 1)
-				if orders_orig is None:
-					logger.error("Skipping site {} due to error when getting order list".format(site.name))
-					continue
+        pp = SilentProcessPool(poolLength=process_pool_size, worker=start_order_updater_instance,
+                               data=sites)
+        pp.logger_name = runner_log_name
+        pp.Run()
 
-				orders = sorted(orders_orig, key=lambda e: to_int(get_child(e, "id")))
+        logger.info("Finished!!!")
 
-				for i, order in enumerate(orders):
-					if i % 100 == 0:
-						logger.info("Storing {}'s new order".format(i))
-						try:
-							ou_db.session.commit()
-						except SQLAlchemyError as e:
-							logger.error("Potential error rolling back transaction")
-							ou_db.session.rollback()
+    except Exception as e:
+        logger.exception("Exception during {} run".format(program_name))
+        raise
 
-					ou_db.store_order(site, order)
-
-					order_items = order.find("order_items")
-					if order_items:
-						for item in order_items:
-							ou_db.store_order_item(site, order, item)
-
-				ou_db.session.commit()
-				logger.info("Finished site {}".format(site.name))
-			except Exception as e:
-				logger.exception("Exception during {} run".format(program_name))
-				logger.error("Skipping site {}".format(site.name))
-
-	except Exception as e:
-		logger.exception("Exception during {} run".format(program_name))
-		raise
-
-	logger.info("Finished!!!")
+# end of main
 
 
 if __name__ == "__main__":
-	main()
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
+

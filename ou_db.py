@@ -86,6 +86,19 @@ def connect(db_username, db_password, db_host, db_name):
 	session = DBSession()
 
 
+def disconnect():
+	global engine
+	global DBSession
+	global session
+
+	session.close()
+	engine.dispose()
+
+	session = None
+	DBSession = None
+	engine = None
+
+
 def create_db():
 	Base.metadata.create_all(engine)
 
@@ -94,9 +107,9 @@ def get_sites():
 	return session.query(Site).all()
 
 
-def get_last_order_id(site):
+def get_last_order_id(site_name):
 	order = session.query(LeadStore)\
-		.filter_by(site_name=site.name)\
+		.filter_by(site_name=site_name)\
 		.order_by(desc(LeadStore.id))\
 		.first()
 
@@ -106,7 +119,7 @@ def get_last_order_id(site):
 		return 0
 
 
-def store_order(site, order):
+def store_order(site_name, order):
 	# db_prod_size_entry = session.query(FeedProdStore) \
 	# 	.filter_by(code=code, param_name=param_name) \
 	# 	.first()
@@ -132,7 +145,7 @@ def store_order(site, order):
 	except ValueError as e:
 		creation_time = 0
 
-	db_order = LeadStore(site_name=site.name,
+	db_order = LeadStore(site_name=site_name,
 						id=order_id,
 						order_type=order_type,
 						time_create=creation_time,
@@ -151,7 +164,7 @@ def store_order(site, order):
 	session.add(db_order)
 
 
-def store_order_item(site, order, item):
+def store_order_item(site_name, order, item):
 	# db_prod_size_entry = session.query(FeedProdStore) \
 	# 	.filter_by(code=, param_name=) \
 	# 	.first()
@@ -195,7 +208,7 @@ def store_order_item(site, order, item):
 		logger.error("No 'price' in order data for order_id {}".format(order_id))
 		item_price = 0
 
-	db_order_item = LeadOrderItems(site_name=site.name,
+	db_order_item = LeadOrderItems(site_name=site_name,
 									id=order_id,
 									name=item_name,
 									code=item_code,
